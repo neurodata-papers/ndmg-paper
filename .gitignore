@@ -1,3 +1,7 @@
 data
 *.csv
 .ipynb_checkpoints
+.vscode
+*pycache
+env
+__pycache__
