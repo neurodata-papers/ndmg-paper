@@ -3,6 +3,7 @@ r"""Get all cpac graphs for (HNU1, BNU1, SWU4, KKI2009, NKI1) | graph in cpac,
 for every cpac graph, concatenate it with its corresponding native-space graph,
 put them all in an output folder to compute discriminability.
 """
+# TODO: figure out why the fuck the shape of the native-space graphs are all over the place
 
 import os
 from pathlib import Path
@@ -203,14 +204,11 @@ def concatenate_cpac_and_native(cpac: "np.array", native: "np.array"):
     if cpac.shape[0] == native.shape[0]:
         return np.hstack((cpac, native))
     else:
-        print("cpac and native graphs not the same size. Skipping.")
+        print(
+            f"current cpac graph is shape {cpac.shape} and current native graph is shape {native.shape}. Skipping."
+        )
         pass
 
-
-a = np.arange(16).reshape((4, 4))
-# b = np.flip(a.copy())
-b = np.full((3, 3), 1)
-concatenate_cpac_and_native(a, b)
 
 # grab a function that computes discriminability on all these graphs.
 # then, run this on each dataset.
@@ -221,6 +219,8 @@ concatenate_cpac_and_native(a, b)
 map_to_files = OrderedDict({"F": "FSL", "X": "nff", "S": "scr", "G": "gsr", "D": "des"})
 "_".join([map_to_files[i] for i in list("FXSGD")])
 
+# Concatenation
+# ------------------------------------------------------------ #
 #%%
 # grab separate graphs
 p = Path.cwd()
@@ -285,14 +285,35 @@ def combined_graph_dict(cpac, native):
     pass
 
 
-for graph in native_graphs_KKI:
-    # turn graph into the equivalent thing in cpac_graphs_KKI
-    sub = ""
-    ses = ""
-    corresponding_cpac = f"{sub}_session_{ses}"
+#%%
+graph = "sub-906_ses-2_dwi_desikan_space-MNI152NLin6_res-2x2x2_measure-spatial-ds_adj"
+parts = graph.split("_")[0:2]  # ['sub-#', 'ses-#']
+pieces = [int(i.split("-")[1]) for i in parts]  # e.g., [849, 2]
+sub, ses = pieces
+corresponding_cpac = f"{sub}_session_{ses}"
+concatenate_cpac_and_native(
+    cpac_graphs_KKI[corresponding_cpac], native_graphs_KKI[graph]
+)
 
-    concatenate_cpac_and_native(cpac[corresponding_cpac], native_graphs_KKI[graph])
+# for graph in native_graphs_KKI:
+#     # turn graph into the equivalent thing in cpac_graphs_KKI
+#     parts = graph.split('_')[0:2]  # ['sub-#', 'ses-#']
+#     pieces = [int(i.split('-')[1]) for i in parts]  # e.g., [849, 2]
+#     sub, ses = pieces
+#     corresponding_cpac = f"{sub}_session_{ses}"
 
+#     # gonna need to turn this into a dictionary appending thing
+#     concatenate_cpac_and_native(cpac[corresponding_cpac], native_graphs_KKI[graph])
 
 #%%
+# check lengths of graphs
+
+# import_graph = partial(graspy.utils.import_edgelist, extension="ssv", delimiter=" ")
+# print([np.shape(graph) for graph in import_graph(fnative_graphs[0])])
+# print([np.shape(graph) for graph in import_graph(fnative_graphs[1])])
+# print([np.shape(graph) for graph in import_graph(fnative_graphs[2])])
+# print([np.shape(graph) for graph in import_graph(fnative_graphs[3])])
+# print([np.shape(graph) for graph in import_graph(fnative_graphs[4])])
+
+print([np.shape(graph) for graph in import_graph(fcpac_graphs[0])])
 
