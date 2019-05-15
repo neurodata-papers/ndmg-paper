@@ -253,16 +253,46 @@ native_graphs = {
     dataset.stem: make_dict_of_graphs(dataset) for dataset in fnative_graphs
 }
 #%%
-# ['cpac_graphs_KKI', 'cpac_graphs_HNU1', 'cpac_graphs_BNU1', 'cpac_graphs_SWU4']
-# list(cpac_graphs.keys())
-# native_graphs['native_graphs_SWU4']
-
-
 # for every dataset in cpac_graphs and native_graphs,
 # for every array in that dataset,
 # check if the subject is the same,
 # and the session is the same.
 # if both are, concatenate the graphs.
-# cpac_graphs["native_graphs_SWU4"]
 
-[dataset for dataset in fcpac_graphs]
+# how do I concatenate, now that I have the data separately organized nicely?
+# I want to:
+# for each dataset in cpac_graphs and native_graphs,
+# pair up the graphs that are concurrent,
+# and output {'sub-#_ses-#': graph}
+
+cpac_graphs_KKI = cpac_graphs["cpac_graphs_KKI"]
+cpac_graphs_HNU1 = cpac_graphs["cpac_graphs_HNU1"]
+cpac_graphs_BNU1 = cpac_graphs["cpac_graphs_BNU1"]
+cpac_graphs_SWU4 = cpac_graphs["cpac_graphs_SWU4"]
+
+native_graphs_KKI = native_graphs["native_graphs_KKI"]
+native_graphs_HNU1 = native_graphs["native_graphs_HNU1"]
+native_graphs_BNU1 = native_graphs["native_graphs_BNU1"]
+native_graphs_SWU4 = native_graphs["native_graphs_SWU4"]
+
+
+def combined_graph_dict(cpac, native):
+    """
+    takes two dicts containing sub# and ses#: array,
+    and for each matching key,
+    concatenates the values using `concatenate_cpac_and_native`
+    """
+    pass
+
+
+for graph in native_graphs_KKI:
+    # turn graph into the equivalent thing in cpac_graphs_KKI
+    sub = ""
+    ses = ""
+    corresponding_cpac = f"{sub}_session_{ses}"
+
+    concatenate_cpac_and_native(cpac[corresponding_cpac], native_graphs_KKI[graph])
+
+
+#%%
+
