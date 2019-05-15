@@ -1,0 +1,1 @@
+dat <- readRDS("/Users/alex/Dropbox/NeuroData/ndmg-paper/discr_fmri_results.rds")

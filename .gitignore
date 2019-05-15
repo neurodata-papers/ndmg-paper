@@ -5,3 +5,10 @@ data
 *pycache
 env
 __pycache__
+*.Rpro
+*.DS_Store
+.pytest*
+*.rds
+*.Rproj
+_.py
+.Rproj.user
