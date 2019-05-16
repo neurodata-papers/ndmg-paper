@@ -9,8 +9,10 @@ put them all in an output folder to compute discriminability.
 import os
 from pathlib import Path
 from collections import OrderedDict
+from collections import Iterable
 from functools import partial
 from functools import reduce
+import warnings
 
 import pandas as pd
 import numpy as np
@@ -233,12 +235,14 @@ fnative_graphs = [folder for folder in p.iterdir() if "native" in folder.name]
 #%%
 # partial function to make graph importing easier, then
 # make an [array of 'thing.name': np.array for array in cpac_graphs]
-def make_dict_of_graphs(dataset: "Path"):
+def make_dict_of_graphs(dataset: "Path"):  # TODO: depracated.
     """
     From a Path of a directory containing a bunch of graph .ssv files,
     return: dict, {subj_ses: np.array}
     """
-    import_graph = partial(graspy.utils.import_edgelist, extension="ssv", delimiter=" ")
+    import_graph = partial(
+        import_edgelist, extension="ssv", delimiter=" ", output_dict=True
+    )
 
     list_of_graphs = import_graph(dataset)
 
@@ -252,11 +256,132 @@ def make_dict_of_graphs(dataset: "Path"):
     return output
 
 
+def import_edgelist(
+    path,
+    extension="edgelist",
+    delimiter=None,
+    nodetype=int,
+    return_vertices=False,
+    output_dict=False,
+):
+    """
+    Function for reading a single or multiple edgelists. When importing multiple 
+    edgelists, the union of vertices from all graphs is computed so that each output
+    graph have matched vertex set. The order of nodes are sorted by node values.
+    Parameters
+    ----------
+    path : str, Path object, or iterable
+        If ``path`` is a directory, then the importing order will be sorted in 
+        alphabetical order.
+    extension : str, optional
+        If ``path`` is a directory, then the function will convert all files
+        with matching extension. 
+    delimiter : str or None, default=None, optional
+        Delimiter of edgelist. If None, the delimiter is whitespace.
+    nodetype : int (default), float, str, Python type, optional
+       Convert node data from strings to specified type.
+    return_vertices : bool, default=False, optional
+        Returns the union of all ind
+    output_dict : bool, default=False, optional
+        If `path` is a file, does nothing.
+        If True, returns dict of {'filename': np.array} key/value pairs.
+    Returns
+    -------
+    out : list of array-like, or array-like, shape (n_vertices, n_vertices) or dict.
+        If ``path`` is a directory, a list of arrays is returned. If ``path`` is both a directory and output_dict is True, a dictionary of {'filename': np.array} is returned. If ``path`` is a file, an array is returned.
+    vertices : array-like, shape (n_vertices, )
+        If ``return_vertices`` == True, then returns an array of all vertices that were 
+        included in the output graphs. 
+    """
+    # p = Path(path)
+    if not isinstance(path, (str, Path, Iterable)):
+        msg = "path must be a string or Iterable, not {}".format(type(path))
+        raise TypeError(msg)
+
+    # get a list of files to import
+    if isinstance(path, (str, Path)):
+        p = Path(path)
+        if p.is_dir():
+            files = sorted(p.glob("*" + extension))
+        elif p.is_file():
+            files = [p]
+        else:
+            raise ValueError("No graphs founds to import.")
+    else:  # path is an iterable
+        files = [Path(f) for f in path]
+
+    if len(files) == 0:
+        msg = "No files found with '{}' extension found.".format(extension)
+        raise ValueError(msg)
+
+    graphs = [
+        nx.read_weighted_edgelist(f, nodetype=nodetype, delimiter=delimiter)
+        for f in files
+    ]
+
+    if all(len(G.nodes) == 0 for G in graphs):
+        msg = (
+            "All graphs have 0 vertices. Please double check if proper "
+            + "'delimiter' is given."
+        )
+        warnings.warn(msg, UserWarning)
+
+    # Compute union of all vertices
+    vertices = np.sort(reduce(np.union1d, [G.nodes for G in graphs]))
+    out = [nx.to_numpy_array(G, nodelist=vertices, dtype=np.float) for G in graphs]
+
+    # only return adjacency matrix if input is only 1 graph
+    if len(out) == 1:
+        out = out[0]
+
+    if return_vertices:
+        return out, vertices
+    elif output_dict and p.is_dir():
+        # TODO: make sure these are sorted properly.
+        filenames = [filepath.stem for filepath in files]
+        dict_out = dict(zip(filenames, out))
+        return dict_out
+
+    else:
+        return out
+
+
+dataset = "/Users/alex/Dropbox/NeuroData/ndmg-paper/data/graphs/native_graphs_HNU1"
+test_path = "/Users/alex/Dropbox/NeuroData/ndmg-paper/data/graphs/native_graphs_HNU1/sub-0025427_ses-1_dwi_desikan_space-MNI152NLin6_res-2x2x2_measure-spatial-ds_adj.ssv"
+import_graph = partial(
+    import_edgelist, extension="ssv", delimiter=" ", output_dict=True
+)
+dataset_dict = import_edgelist(
+    dataset,
+    extension="ssv",
+    delimiter=" ",
+    nodetype=int,
+    return_vertices=False,
+    output_dict=True,
+)
+
+#%%
+# test to make sure dataset_dict sorts graphs properly
+def return_sorted_graph(graph_file):
+    graph = nx.read_weighted_edgelist(test_path, nodetype=int, delimiter=" ")
+    vertices = np.arange(1, 71)
+    out = nx.to_numpy_array(graph, nodelist=vertices, dtype=np.float)
+    return out
+
+
+np.all(
+    dataset_dict[
+        "sub-0025427_ses-1_dwi_desikan_space-MNI152NLin6_res-2x2x2_measure-spatial-ds_adj"
+    ]
+    == return_sorted_graph(test_path)
+)  # return True
+
+
+#%%
 # {dataset.stem: {subj_ses: np.array}}
-# cpac_graphs = {dataset.stem: make_dict_of_graphs(dataset) for dataset in fcpac_graphs}
-# native_graphs = {
-#     dataset.stem: make_dict_of_graphs(dataset) for dataset in fnative_graphs
-# }
+# everything is now correctly the right shape
+cpac_graphs = {dataset.stem: import_graph(dataset) for dataset in fcpac_graphs}
+native_graphs = {dataset.stem: import_graph(dataset) for dataset in fnative_graphs}
 #%%
 # for every dataset in cpac_graphs and native_graphs,
 # for every array in that dataset,
@@ -280,55 +405,58 @@ native_graphs_HNU1 = native_graphs["native_graphs_HNU1"]
 native_graphs_BNU1 = native_graphs["native_graphs_BNU1"]
 native_graphs_SWU4 = native_graphs["native_graphs_SWU4"]
 
+#%%
+# graph = (
+#     "sub-0025427_ses-1_dwi_desikan_space-MNI152NLin6_res-2x2x2_measure-spatial-ds_adj"
+# )
+# parts = graph.split("_")[0:2]
+# print(parts)  # ['sub-#', 'ses-#']
+# pieces = [i.split("-")[1] for i in parts]
+# print(pieces)  # e.g., [849, 2]
+# sub, ses = pieces
+# corresponding_cpac = f"HNU1_{sub}_session_{ses}_correlation"
+# corresponding_cpac
+# graph = concatenate_cpac_and_native(
+#     cpac_graphs_HNU1[corresponding_cpac], native_graphs_HNU1[graph]
+# )
+# np.shape(graph)
 
-def combined_graph_dict(cpac, native):
-    """
-    takes two dicts containing sub# and ses#: array,
-    and for each matching key,
-    concatenates the values using `concatenate_cpac_and_native`
-    """
-    pass
+concatenated_graphs_HNU1 = []
+dataset = "HNU1"
+native_graphs_HNU1
+
+# TODO: maybe turn this into a function? could be useful
+
+
+def final_concat(native_graphs, cpac_graphs, dataset):
+    concatenated_graphs = []
+    for fgraph in native_graphs:
+        # turn graph into the equivalent thing in cpac_graphs_KKI
+        parts = fgraph.split("_")[0:2]  # ['sub-#', 'ses-#']
+        pieces = [i.split("-")[1] for i in parts]  # e.g., [849, 2]
+        sub, ses = pieces
+        corresponding_cpac = f"{dataset}_{sub}_session_{ses}_correlation"
+
+        # gonna need to turn this into a dictionary appending thing
+        graph = concatenate_cpac_and_native(
+            cpac_graphs[corresponding_cpac], native_graphs[fgraph]
+        )
+        key = f"sub_{sub}_session_{ses}"
+        try:
+            concatenated_graphs.append((key, graph))
+        except:
+            print(
+                f"parts: {parts}, pieces: {pieces}, corresponding_cpac: {corresponding_cpac}"
+            )
+            pass
+        return dict(concatenated_graphs)
 
 
 #%%
-graph = "sub-906_ses-2_dwi_desikan_space-MNI152NLin6_res-2x2x2_measure-spatial-ds_adj"
-parts = graph.split("_")[0:2]  # ['sub-#', 'ses-#']
-pieces = [int(i.split("-")[1]) for i in parts]  # e.g., [849, 2]
-sub, ses = pieces
-corresponding_cpac = f"{sub}_session_{ses}"
-concatenate_cpac_and_native(
-    cpac_graphs_KKI[corresponding_cpac], native_graphs_KKI[graph]
-)
+# Whoa what the fuck, it works
+graphs_HNU1 = final_concat(native_graphs_HNU1, cpac_graphs_HNU1, "HNU1")
+graphs_SWU4 = final_concat(native_graphs_SWU4, cpac_graphs_SWU4, "SWU4")
+graphs_BNU1 = final_concat(native_graphs_BNU1, cpac_graphs_BNU1, "BNU1")
+# graphs_NKI = final_concat(native_graphs_NKI, cpac_graphs_NKI, "NKI")  # TODO
+# graphs_KKI = final_concat(native_graphs_KKI, cpac_graphs_KKI, "KKI")  # TODO
 
-# for graph in native_graphs_KKI:
-#     # turn graph into the equivalent thing in cpac_graphs_KKI
-#     parts = graph.split('_')[0:2]  # ['sub-#', 'ses-#']
-#     pieces = [int(i.split('-')[1]) for i in parts]  # e.g., [849, 2]
-#     sub, ses = pieces
-#     corresponding_cpac = f"{sub}_session_{ses}"
-
-#     # gonna need to turn this into a dictionary appending thing
-#     concatenate_cpac_and_native(cpac[corresponding_cpac], native_graphs_KKI[graph])
-
-#%%
-# check lengths of graphs
-
-# print([np.shape(graph) for graph in import_graph(fnative_graphs[0])])
-# print([np.shape(graph) for graph in import_graph(fnative_graphs[1])])
-# print([np.shape(graph) for graph in import_graph(fnative_graphs[2])])
-# print([np.shape(graph) for graph in import_graph(fnative_graphs[3])])
-# print([np.shape(graph) for graph in import_graph(fnative_graphs[4])])
-
-# Fuck. The function that loops over the directories to grab graphs drops a bunch of nodes.
-import_graph = partial(graspy.utils.import_edgelist, extension="ssv", delimiter=" ")
-print([np.shape(graph) for graph in import_graph(fnative_graphs[3])])
-print([np.shape(graph) for graph in native_graphs_KKI.values()])
-
-#%%
-files = [str(i) for i in fnative_graphs[3].iterdir()]
-graphs = [nx.read_weighted_edgelist(f, nodetype=int, delimiter=" ") for f in files]
-vertices = np.sort(reduce(np.union1d, [G.nodes for G in graphs]))
-out = [nx.to_numpy_array(G, nodelist=vertices, dtype=np.float) for G in graphs]
-
-#%%
-out[0].shape
