@@ -240,6 +240,8 @@ def make_dict_of_graphs(dataset: "Path"):
     """
     import_graph = partial(graspy.utils.import_edgelist, extension="ssv", delimiter=" ")
 
+    list_of_graphs = import_graph(dataset)
+
     # more clear than a dict comprehension
     output = dict()
     for pgraph in dataset.iterdir():
@@ -251,10 +253,10 @@ def make_dict_of_graphs(dataset: "Path"):
 
 
 # {dataset.stem: {subj_ses: np.array}}
-cpac_graphs = {dataset.stem: make_dict_of_graphs(dataset) for dataset in fcpac_graphs}
-native_graphs = {
-    dataset.stem: make_dict_of_graphs(dataset) for dataset in fnative_graphs
-}
+# cpac_graphs = {dataset.stem: make_dict_of_graphs(dataset) for dataset in fcpac_graphs}
+# native_graphs = {
+#     dataset.stem: make_dict_of_graphs(dataset) for dataset in fnative_graphs
+# }
 #%%
 # for every dataset in cpac_graphs and native_graphs,
 # for every array in that dataset,

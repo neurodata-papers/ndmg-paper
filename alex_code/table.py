@@ -1,11 +1,12 @@
 # TODO: sort within each category highest to lowest
 # TODO: native-space + cpac numbers
-# TODO: replace cpac numbers with max rather than average
 # TODO: make rows with just all-nan values at the bottom
+# TODO: proper sig figs
 #%%
 import os
 import shutil
 from pathlib import Path
+from collections import OrderedDict
 
 import pandas as pd
 from numpy import NaN
@@ -101,21 +102,33 @@ rdf.to_csvfile("discr_fmri_results.csv")
 df_cpac = pd.read_csv("discr_fmri_results.csv")
 
 #%%
+# subset cpac numbers to be what we want for the table
+Reg = "F"
+FF = "N"
+Scr = "S"
+Gsr = "G"
+Parcellation = "D"
+xfm = "P"
+df_cpac = cpac[
+    (cpac["Reg"] == Reg)
+    & (cpac["FF"] == FF)
+    & (cpac["Scr"] == Scr)
+    & (cpac["GSR"] == Gsr)
+    & (cpac["Parcellation"] == Parcellation)
+    & (cpac["xfm"] == xfm)
+]
+#%%
 # Take the average discriminability grouped by dataset
 df_cpac = df_cpac.groupby("Dataset").mean().discr
-table.head()
-
-#%%
-df_cpac.head()
+df_cpac
 #%%
 # Rename in preparation for merge, merge, then clean
 df_cpac.index.name = "Study"
 df_cpac.name = "CPAC"
 table = table.merge(df_cpac, how="left", right_index=True, left_index=True)
 table["CPAC_x"], table["CPAC_y"] = table["CPAC_y"], table["CPAC_x"]
-
-#%%
 table
+#%%
 table = table.rename(columns={"CPAC_x": "CPAC"}).drop("CPAC_y", axis=1)
 
 #%%
@@ -148,6 +161,7 @@ table.loc["KKI2009", "Native-Space"] = np.NaN
 
 #%%
 # drop null values
+# TODO: make rows with just all-nan values at the bottom
 table.dropna(how="all", inplace=True)
 
 #%%
