@@ -4,14 +4,17 @@ for every cpac graph, concatenate it with its corresponding native-space graph,
 put them all in an output folder to compute discriminability.
 """
 # TODO: figure out why the fuck the shape of the native-space graphs are all over the place
+# TODO: ok figured out the above. Now: edit `make_dict_of_graphs` to return graphs with the right number of nodes.
 
 import os
 from pathlib import Path
 from collections import OrderedDict
 from functools import partial
+from functools import reduce
 
 import pandas as pd
 import numpy as np
+import networkx as nx
 import graspy
 
 if not Path(os.getcwd()).name == "alex_code":
@@ -308,12 +311,22 @@ concatenate_cpac_and_native(
 #%%
 # check lengths of graphs
 
-# import_graph = partial(graspy.utils.import_edgelist, extension="ssv", delimiter=" ")
 # print([np.shape(graph) for graph in import_graph(fnative_graphs[0])])
 # print([np.shape(graph) for graph in import_graph(fnative_graphs[1])])
 # print([np.shape(graph) for graph in import_graph(fnative_graphs[2])])
 # print([np.shape(graph) for graph in import_graph(fnative_graphs[3])])
 # print([np.shape(graph) for graph in import_graph(fnative_graphs[4])])
 
-print([np.shape(graph) for graph in import_graph(fcpac_graphs[0])])
+# Fuck. The function that loops over the directories to grab graphs drops a bunch of nodes.
+import_graph = partial(graspy.utils.import_edgelist, extension="ssv", delimiter=" ")
+print([np.shape(graph) for graph in import_graph(fnative_graphs[3])])
+print([np.shape(graph) for graph in native_graphs_KKI.values()])
 
+#%%
+files = [str(i) for i in fnative_graphs[3].iterdir()]
+graphs = [nx.read_weighted_edgelist(f, nodetype=int, delimiter=" ") for f in files]
+vertices = np.sort(reduce(np.union1d, [G.nodes for G in graphs]))
+out = [nx.to_numpy_array(G, nodelist=vertices, dtype=np.float) for G in graphs]
+
+#%%
+out[0].shape
