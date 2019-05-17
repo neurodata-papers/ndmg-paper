@@ -437,26 +437,30 @@ def final_concat(native_graphs, cpac_graphs, dataset):
         sub, ses = pieces
         corresponding_cpac = f"{dataset}_{sub}_session_{ses}_correlation"
 
-        # gonna need to turn this into a dictionary appending thing
-        graph = concatenate_cpac_and_native(
-            cpac_graphs[corresponding_cpac], native_graphs[fgraph]
-        )
-        key = f"sub_{sub}_session_{ses}"
+        # grab the cpac graph and native graph
+        native_graph = native_graphs[fgraph]
         try:
-            concatenated_graphs.append((key, graph))
-        except:
+            cpac_graph = cpac_graphs[corresponding_cpac]
+        except KeyError:
+            # TODO: make this more elegant
             print(
                 f"parts: {parts}, pieces: {pieces}, corresponding_cpac: {corresponding_cpac}"
             )
-            pass
-        return dict(concatenated_graphs)
+            continue
+
+        # gonna need to turn this into a dictionary appending thing
+        graph = concatenate_cpac_and_native(cpac_graph, native_graph)
+        key = f"sub_{sub}_session_{ses}"
+        concatenated_graphs.append((key, graph))
+    return concatenated_graphs
 
 
 #%%
-# Whoa what the fuck, it works
+# sweet, it works
 graphs_HNU1 = final_concat(native_graphs_HNU1, cpac_graphs_HNU1, "HNU1")
 graphs_SWU4 = final_concat(native_graphs_SWU4, cpac_graphs_SWU4, "SWU4")
 graphs_BNU1 = final_concat(native_graphs_BNU1, cpac_graphs_BNU1, "BNU1")
 # graphs_NKI = final_concat(native_graphs_NKI, cpac_graphs_NKI, "NKI")  # TODO
 # graphs_KKI = final_concat(native_graphs_KKI, cpac_graphs_KKI, "KKI")  # TODO
+final_concat(native_graphs_HNU1, cpac_graphs_HNU1, "HNU1")
 
