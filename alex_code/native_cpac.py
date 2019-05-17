@@ -464,3 +464,8 @@ graphs_BNU1 = final_concat(native_graphs_BNU1, cpac_graphs_BNU1, "BNU1")
 # graphs_KKI = final_concat(native_graphs_KKI, cpac_graphs_KKI, "KKI")  # TODO
 final_concat(native_graphs_HNU1, cpac_graphs_HNU1, "HNU1")
 
+# Ok, now I have a bunch of concatenated nxp graphs for each dataset.
+# Now, I think I have to turn each one into an X matrix and a target vector.
+# Try using my other code from discrim for that
+# Make sure things don't get sorted weird!
+# but first, organize all this fucking code
