@@ -19,6 +19,10 @@ import numpy as np
 import networkx as nx
 import graspy
 
+# my own package with functions for making working with graphs easier
+from graphutils.graph_io import get_X
+from graphutils.graph_io import get_Y
+
 if not Path(os.getcwd()).name == "alex_code":
     os.chdir("alex_code")
 
@@ -135,7 +139,9 @@ def final_concat(native_graphs, cpac_graphs, dataset):
     # and specific to the exact name formatting for
     # the particular set of native-space and cpac graphs I have.
     # TODO: is there a way to turn this into a general-form function?
-    """for every dataset in cpac_graphs and native_graphs,
+    """Concatenate two dicts of graphs into one dict of graphs.
+    
+    for every dataset in cpac_graphs and native_graphs,
     for every array in that dataset,
     check if the subject is the same,
     and the session is the same.
@@ -170,6 +176,16 @@ def final_concat(native_graphs, cpac_graphs, dataset):
         key = f"sub_{sub}_session_{ses}"
         concatenated_graphs.append((key, graph))
     return concatenated_graphs
+
+
+def return_X_and_Y(input_dataset):
+    arrays = list(OrderedDict(input_dataset).values())
+    names = list(OrderedDict(input_dataset).keys())
+    names = [name.split("_")[1] for name in names]
+
+    X = get_X(arrays, PTR=False)
+    Y = np.array(names)
+    return (X, Y)
 
 
 def return_sorted_graph(graph_file: str, n_nodes: int):
@@ -243,10 +259,34 @@ graphs_SWU4 = final_concat(native_graphs_SWU4, cpac_graphs_SWU4, "SWU4")
 graphs_BNU1 = final_concat(native_graphs_BNU1, cpac_graphs_BNU1, "BNU1")
 # graphs_NKI = final_concat(native_graphs_NKI, cpac_graphs_NKI, "NKI")  # TODO
 # graphs_KKI = final_concat(native_graphs_KKI, cpac_graphs_KKI, "KKI")  # TODO
-final_concat(native_graphs_HNU1, cpac_graphs_HNU1, "HNU1")
 
-# Ok, now I have a bunch of concatenated nxp graphs for each dataset.
-# Now, I think I have to turn each one into an X matrix and a target vector.
-# Try using my other code from discrim for that
-# Make sure things don't get sorted weird!
-# but first, organize all this code
+# all graphs turned into (X, Y) matrix + target vector
+# out_HNU1 = return_X_and_Y(graphs_HNU1)
+# out_SWU4 = return_X_and_Y(graphs_SWU4)
+# out_HNU1 = return_X_and_Y(graphs_BNU1)
+
+#%%
+out_HNU1 = return_X_and_Y(graphs_HNU1)
+out_SWU4 = return_X_and_Y(graphs_SWU4)
+out_BNU1 = return_X_and_Y(graphs_BNU1)
+
+# do a check to make sure the order didn't get messed up
+allgraphs = [graphs_BNU1, graphs_HNU1, graphs_SWU4]
+alldata = [out_BNU1, out_HNU1, out_SWU4]
+
+# graphs_SWU4[0]
+return_X_and_Y(graphs_SWU4)[1][0]
+
+# make sure all names in target vector match names in dictionary
+assert np.all(
+    out_SWU4[1]
+    == list([name.split("_")[1] for name in list(OrderedDict(graphs_SWU4).keys())])
+)
+assert np.all(
+    out_HNU1[1]
+    == list([name.split("_")[1] for name in list(OrderedDict(graphs_HNU1).keys())])
+)
+assert np.all(
+    out_BNU1[1]
+    == list([name.split("_")[1] for name in list(OrderedDict(graphs_BNU1).keys())])
+)
