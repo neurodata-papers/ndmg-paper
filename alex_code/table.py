@@ -1,6 +1,5 @@
 # TODO: sort within each category highest to lowest
 # TODO: KKI and NKI native+cpac numbers
-# TODO: make rows with just all-nan values at the bottom
 # TODO: proper sig figs
 #%%
 import os
@@ -156,8 +155,12 @@ table.loc["HNU1", "Native-Space + CPAC"] = 0.831
 table.loc["SWU4", "Native-Space + CPAC"] = 0.568
 
 #%%
-# drop null values
+# move all of NaN rows to the bottom
+nans = table.isnull().all(axis=1)
+notnans = ~nans
+table = table[notnans].append(table[nans])
+table
+#%%
 # table.dropna(how="all", inplace=True)
 # latexify(table)
 table
-latexify(table)
