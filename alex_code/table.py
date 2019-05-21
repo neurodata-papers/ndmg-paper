@@ -1,5 +1,5 @@
 # TODO: sort within each category highest to lowest
-# TODO: native-space + cpac numbers
+# TODO: KKI and NKI native+cpac numbers
 # TODO: make rows with just all-nan values at the bottom
 # TODO: proper sig figs
 #%%
@@ -160,3 +160,4 @@ table.loc["SWU4", "Native-Space + CPAC"] = 0.568
 # table.dropna(how="all", inplace=True)
 # latexify(table)
 table
+latexify(table)
