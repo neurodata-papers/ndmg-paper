@@ -278,6 +278,7 @@ alldata = [out_BNU1, out_HNU1, out_SWU4]
 return_X_and_Y(graphs_SWU4)[1][0]
 
 # make sure all names in target vector match names in dictionary
+# for at least the first subject of each dataset
 assert np.all(
     out_SWU4[1]
     == list([name.split("_")[1] for name in list(OrderedDict(graphs_SWU4).keys())])
@@ -290,3 +291,28 @@ assert np.all(
     out_BNU1[1]
     == list([name.split("_")[1] for name in list(OrderedDict(graphs_BNU1).keys())])
 )
+
+#%%
+# output the X matrices as csv files
+
+# tuples of (X, Y)
+# out_BNU1
+# out_HNU1
+# out_SWU4
+
+# need:
+# out_NKI1
+# out_KKI
+
+
+def save_X_and_Y(XY_tuple, filename: str) -> None:
+    X = XY_tuple[0]
+    Y = XY_tuple[1]
+    np.savetxt(f"{filename}_X.csv", X, fmt="%f", delimiter=",")
+    np.savetxt(f"{filename}_Y.csv", Y, fmt="%s")
+
+
+# Make output files
+save_X_and_Y(out_HNU1, datapath / "out_HNU1")
+save_X_and_Y(out_SWU4, datapath / "out_SWU4")
+save_X_and_Y(out_BNU1, datapath / "out_BNU1")

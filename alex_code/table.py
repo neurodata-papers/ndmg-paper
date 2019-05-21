@@ -61,7 +61,7 @@ table = pd.DataFrame(
 )
 table["Study"] = list(dsets.keys())
 table.set_index("Study", inplace=True)
-
+table
 #%%
 # list of discriminability values, with [0] being IPCAS6
 fMRI_discrim_list = [
@@ -95,7 +95,6 @@ table.loc["KKI2009"] = [1.00, 1.00, NaN, NaN, NaN, NaN]
 
 table
 #%%
-#%%
 # grab cpac data using rpy2 and stick it into a pandas dataframe
 rdf = robjects.r("dat <- readRDS('discr_fmri_results.rds')")
 rdf.to_csvfile("discr_fmri_results.csv")
@@ -109,17 +108,19 @@ Scr = "S"
 Gsr = "G"
 Parcellation = "D"
 xfm = "P"
-df_cpac = cpac[
-    (cpac["Reg"] == Reg)
-    & (cpac["FF"] == FF)
-    & (cpac["Scr"] == Scr)
-    & (cpac["GSR"] == Gsr)
-    & (cpac["Parcellation"] == Parcellation)
-    & (cpac["xfm"] == xfm)
+df_cpac = df_cpac[
+    (df_cpac["Reg"] == Reg)
+    & (df_cpac["FF"] == FF)
+    & (df_cpac["Scr"] == Scr)
+    & (df_cpac["GSR"] == Gsr)
+    & (df_cpac["Parcellation"] == Parcellation)
+    & (df_cpac["xfm"] == xfm)
 ]
+df_cpac
 #%%
 # Take the average discriminability grouped by dataset
-df_cpac = df_cpac.groupby("Dataset").mean().discr
+df_cpac.set_index("Dataset", drop=True, inplace=True)
+df_cpac = df_cpac.discr
 df_cpac
 #%%
 # Rename in preparation for merge, merge, then clean
@@ -127,20 +128,12 @@ df_cpac.index.name = "Study"
 df_cpac.name = "CPAC"
 table = table.merge(df_cpac, how="left", right_index=True, left_index=True)
 table["CPAC_x"], table["CPAC_y"] = table["CPAC_y"], table["CPAC_x"]
-table
-#%%
 table = table.rename(columns={"CPAC_x": "CPAC"}).drop("CPAC_y", axis=1)
-
-#%%
 table.rename(
     columns={"dMRI": "ndmg-d", "fMRI": "ndmg-f", "dMRI + fMRI": "ndmg-d + ndmg-f"},
     inplace=True,
 )
 table
-#%%
-# latexify(table)
-
-
 #%%
 new_native_space_numbers = {"NKI1": 0.918, "HNU1": 0.989, "BNU1": 0.999, "SWU4": 0.815}
 table["Native-Space"].update(pd.Series(new_native_space_numbers))
@@ -150,19 +143,20 @@ table.loc["KKI2009", "Native-Space"] = NaN
 
 
 #%%
-""" Grab cpac """
-#%%
-# cpac[cpac['Dataset']
 table.loc["BNU1", "Native-Space"] = 0.989
 table.loc["HNU1", "Native-Space"] = 0.989
 table.loc["NKI", "Native-Space"] = 0.918
 table.loc["SWU4", "Native-Space"] = 0.815
 table.loc["KKI2009", "Native-Space"] = np.NaN
+table
+#%%
+# add native+cpac numbers
+table.loc["BNU1", "Native-Space + CPAC"] = 0.866
+table.loc["HNU1", "Native-Space + CPAC"] = 0.831
+table.loc["SWU4", "Native-Space + CPAC"] = 0.568
 
 #%%
 # drop null values
-# TODO: make rows with just all-nan values at the bottom
-table.dropna(how="all", inplace=True)
-
-#%%
-latexify(table)
+# table.dropna(how="all", inplace=True)
+# latexify(table)
+table
