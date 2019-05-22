@@ -41,6 +41,7 @@ def import_edgelist(
     Function for reading a single or multiple edgelists. When importing multiple 
     edgelists, the union of vertices from all graphs is computed so that each output
     graph have matched vertex set. The order of nodes are sorted by node values.
+
     Parameters
     ----------
     path : str, Path object, or iterable
@@ -58,6 +59,7 @@ def import_edgelist(
     output_dict : bool, default=False, optional
         If `path` is a file, does nothing.
         If True, returns dict of {'filename': np.array} key/value pairs.
+
     Returns
     -------
     out : list of array-like, or array-like, shape (n_vertices, n_vertices) or dict.

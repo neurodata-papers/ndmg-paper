@@ -154,6 +154,9 @@ table.loc["BNU1", "Native-Space + CPAC"] = 0.866
 table.loc["HNU1", "Native-Space + CPAC"] = 0.831
 table.loc["SWU4", "Native-Space + CPAC"] = 0.568
 
+# drop weird extra NKI row
+table.drop("NKI", axis=0, inplace=True)
+
 #%%
 # move all of NaN rows to the bottom
 nans = table.isnull().all(axis=1)
@@ -161,6 +164,8 @@ notnans = ~nans
 table = table[notnans].append(table[nans])
 table
 #%%
-# table.dropna(how="all", inplace=True)
+# TODO: sort within each category highest to lowest
+
+# 
+#%%
 # latexify(table)
-table
